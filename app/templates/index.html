@@ -166,13 +166,25 @@
             margin-top: 1rem;
         }
 
-        .card-links a {
+        .card-links button, .card-links a {
             display: inline-block;
             padding: 0.5rem 0.75rem;
             border-radius: 4px;
             text-decoration: none;
             font-size: 0.9rem;
             text-align: center;
+        }
+
+        .btn-preview {
+            background-color: #0284c7;
+            color: #ffffff;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-preview:hover {
+            background-color: #0369a1;
         }
 
         .btn-search {
@@ -204,6 +216,110 @@
             background-color: #065f46;
         }
 
+        /* Profile Modal Styles */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-color);
+            background-color: #334155;
+        }
+
+        .profile-details h3 {
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+
+        .profile-details p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .profile-bio {
+            background-color: #0f172a;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            color: #cbd5e1;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .metric-box {
+            background-color: #0f172a;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .metric-box label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .metric-box span {
+            font-weight: bold;
+            font-size: 1rem;
+            color: var(--accent-color);
+        }
+
         footer {
             margin-top: 3rem;
             text-align: center;
@@ -223,7 +339,7 @@
             <summary>💡 How to use ProfScope</summary>
             <ul>
                 <li><strong>Enter a Full Name:</strong> e.g., <code>"John Doe"</code> &rarr; Discovers candidate profiles across LinkedIn, GitHub, GitLab, Stack Overflow, and Medium.</li>
-                <li><strong>Enter a Username / Handle:</strong> e.g., <code>"octocat"</code> or <code>"kofi"</code> &rarr; Generates direct candidate profile links and targeted dorks.</li>
+                <li><strong>Enter a Username / Handle:</strong> e.g., <code>"octocat"</code> or <code>"kofi"</code> &rarr; Generates direct candidate profile links, inline profile previews, and targeted dorks.</li>
                 <li><strong>Paste a Profile URL:</strong> e.g., <code>"https://stackoverflow.com/users/12888115/kofi"</code> &rarr; Automatically extracts handle <code>kofi</code> and finds matching profiles across other professional platforms.</li>
             </ul>
         </details>
@@ -253,6 +369,7 @@
                     <p style="color: var(--text-muted); font-size: 0.85rem;">{{ item.domain }}</p>
                 </div>
                 <div class="card-links">
+                    <button type="button" class="btn-preview" onclick="openProfilePreview('{{ item.platform }}', '{{ search_data.extracted_target }}')">🔍 Preview {{ item.platform }} Info</button>
                     {% if item.profile_candidate_url %}
                     <a href="{{ item.profile_candidate_url }}" target="_blank" class="btn-candidate" title="{{ item.profile_candidate_url }}">Direct Handle Link</a>
                     {% endif %}
@@ -264,9 +381,77 @@
         </div>
         {% endif %}
 
+        <!-- Profile Modal -->
+        <div id="profileModal" class="modal-backdrop">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeProfileModal()">&times;</button>
+                <div id="modalBody">
+                    <p style="text-align: center; color: var(--text-muted);">Fetching live profile data...</p>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p>ProfScope - Public OSINT Discovery Tool for Legitimate Research</p>
         </footer>
     </div>
+
+    <script>
+        async function openProfilePreview(platform, username) {
+            const modal = document.getElementById("profileModal");
+            const modalBody = document.getElementById("modalBody");
+            modal.style.display = "flex";
+            modalBody.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">Fetching public profile info from ' + platform + '...</p>';
+
+            try {
+                const response = await fetch('/api/v1/profile-info?platform=' + encodeURIComponent(platform) + '&username=' + encodeURIComponent(username));
+                const data = await response.json();
+
+                if (data.error) {
+                    modalBody.innerHTML = `
+                        <h3 style="color: #ef4444; margin-bottom: 0.5rem;">${platform} Info</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">${data.error}</p>
+                    `;
+                    return;
+                }
+
+                let metricsHtml = '';
+                if (data.metrics) {
+                    for (const [key, val] of Object.entries(data.metrics)) {
+                        metricsHtml += `
+                            <div class="metric-box">
+                                <label>${key}</label>
+                                <span>${val}</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                modalBody.innerHTML = `
+                    <div class="profile-header">
+                        ${data.avatar_url ? `<img src="${data.avatar_url}" class="profile-avatar" alt="Avatar">` : '<div class="profile-avatar" style="display:flex;align-items:center;justify-content:center;font-weight:bold;color:#38bdf8;">OSINT</div>'}
+                        <div class="profile-details">
+                            <h3>${data.name || data.username}</h3>
+                            <p>@${data.username} &bull; ${data.location || 'Public Profile'}</p>
+                        </div>
+                    </div>
+                    <div class="profile-bio">${data.bio || 'No public bio available.'}</div>
+                    ${metricsHtml ? `<div class="metrics-grid">${metricsHtml}</div>` : ''}
+                    <div style="text-align: center;">
+                        <a href="${data.profile_url}" target="_blank" class="btn-candidate" style="display:inline-block; width:100%;">Visit ${data.platform} Profile Page</a>
+                    </div>
+                `;
+            } catch (err) {
+                modalBody.innerHTML = `
+                    <h3 style="color: #ef4444; margin-bottom: 0.5rem;">Error</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Unable to fetch profile preview: ${err.message}</p>
+                `;
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById("profileModal").style.display = "none";
+        }
+    </script>
 </body>
 </html>
