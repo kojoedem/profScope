@@ -35,7 +35,7 @@
         }
 
         header {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-align: center;
         }
 
@@ -48,6 +48,28 @@
         header p {
             color: var(--text-muted);
             font-size: 1.1rem;
+        }
+
+        .instructions {
+            background-color: #1e1b4b;
+            border: 1px solid #4338ca;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #c7d2fe;
+        }
+
+        .instructions summary {
+            font-weight: bold;
+            cursor: pointer;
+            color: #a5b4fc;
+        }
+
+        .instructions ul {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
         }
 
         .search-box {
@@ -95,6 +117,25 @@
         button:hover {
             background-color: var(--accent-hover);
             color: #fff;
+        }
+
+        .results-header {
+            background-color: #0284c722;
+            border: 1px solid var(--accent-color);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+
+        .results-header h2 {
+            font-size: 1.25rem;
+            color: var(--accent-color);
+        }
+
+        .results-header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
         }
 
         .results-grid {
@@ -178,17 +219,34 @@
             <p>Professional OSINT Profile Discovery Tool</p>
         </header>
 
+        <details class="instructions" open>
+            <summary>💡 How to use ProfScope</summary>
+            <ul>
+                <li><strong>Enter a Full Name:</strong> e.g., <code>"John Doe"</code> &rarr; Discovers candidate profiles across LinkedIn, GitHub, GitLab, Stack Overflow, and Medium.</li>
+                <li><strong>Enter a Username / Handle:</strong> e.g., <code>"octocat"</code> or <code>"kofi"</code> &rarr; Generates direct candidate profile links and targeted dorks.</li>
+                <li><strong>Paste a Profile URL:</strong> e.g., <code>"https://stackoverflow.com/users/12888115/kofi"</code> &rarr; Automatically extracts handle <code>kofi</code> and finds matching profiles across other professional platforms.</li>
+            </ul>
+        </details>
+
         <div class="search-box">
             <form action="/" method="get" class="search-form">
-                <input type="text" name="q" value="{{ query if query else '' }}" placeholder="Enter full name or username (e.g. 'John Doe' or 'octocat')" required>
+                <input type="text" name="q" value="{{ search_data.raw_query if search_data else '' }}" placeholder="Enter full name, handle, or profile URL (e.g. 'Jane Doe', 'octocat', or StackOverflow link)" required>
                 <button type="submit">Discover Profiles</button>
             </form>
         </div>
 
-        {% if results %}
-        <h2 style="margin-bottom: 1rem; font-size: 1.3rem;">Results for "{{ query }}"</h2>
+        {% if search_data %}
+        <div class="results-header">
+            <h2>Results for target: "{{ search_data.extracted_target }}"</h2>
+            {% if search_data.is_url %}
+            <p>ℹ️ Extracted handle/target <code>{{ search_data.extracted_target }}</code> from submitted URL: <i>{{ search_data.raw_query }}</i></p>
+            {% else %}
+            <p>Searching professional platforms and generating Google Dorks for <code>{{ search_data.extracted_target }}</code></p>
+            {% endif %}
+        </div>
+
         <div class="results-grid">
-            {% for item in results %}
+            {% for item in search_data.results %}
             <div class="card">
                 <div>
                     <h3>{{ item.platform }}</h3>
@@ -196,10 +254,10 @@
                 </div>
                 <div class="card-links">
                     {% if item.profile_candidate_url %}
-                    <a href="{{ item.profile_candidate_url }}" target="_blank" class="btn-candidate">Direct Handle Link</a>
+                    <a href="{{ item.profile_candidate_url }}" target="_blank" class="btn-candidate" title="{{ item.profile_candidate_url }}">Direct Handle Link</a>
                     {% endif %}
-                    <a href="{{ item.search_url }}" target="_blank" class="btn-search">Search Platform</a>
-                    <a href="{{ item.google_dork_url }}" target="_blank" class="btn-dork">Google Dork Search</a>
+                    <a href="{{ item.search_url }}" target="_blank" class="btn-search" title="{{ item.search_url }}">Search Platform</a>
+                    <a href="{{ item.google_dork_url }}" target="_blank" class="btn-dork" title="{{ item.google_dork }}">Google Dork Search</a>
                 </div>
             </div>
             {% endfor %}

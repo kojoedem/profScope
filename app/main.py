@@ -20,14 +20,13 @@ app.include_router(api_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, q: Optional[str] = Query(None)):
-    results = None
+    search_data = None
     if q:
-        search_res = await perform_search(query=q)
-        results = search_res.results
+        search_data = await perform_search(query=q)
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"query": q, "results": results}
+        context={"search_data": search_data}
     )
 
 if __name__ == "__main__":
