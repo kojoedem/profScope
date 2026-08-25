@@ -24,6 +24,18 @@ def test_extract_target_from_input():
     assert target == "jane-doe"
     assert is_url is True
 
+    target, is_url = extract_target_from_input("https://x.com/kofi")
+    assert target == "kofi"
+    assert is_url is True
+
+    target, is_url = extract_target_from_input("https://www.tiktok.com/@kofi")
+    assert target == "kofi"
+    assert is_url is True
+
+    target, is_url = extract_target_from_input("https://www.snapchat.com/add/kofi")
+    assert target == "kofi"
+    assert is_url is True
+
 def test_google_dork_url_generation():
     url = generate_google_dork_url('site:linkedin.com/in/ "John Doe"')
     assert "google.com/search?q=" in url
@@ -54,6 +66,11 @@ def test_api_platforms_endpoint():
     assert "gitlab" in platform_keys
     assert "stackoverflow" in platform_keys
     assert "medium" in platform_keys
+    assert "x" in platform_keys
+    assert "facebook" in platform_keys
+    assert "instagram" in platform_keys
+    assert "tiktok" in platform_keys
+    assert "snapchat" in platform_keys
 
 def test_api_search_endpoint():
     mock_profiles = [
@@ -78,7 +95,7 @@ def test_api_search_endpoint():
         assert len(data["discovered_profiles"]) == 1
         assert data["discovered_profiles"][0]["display_name"] == "kofi"
         assert data["discovered_profiles"][0]["search_url"] == "https://github.com/search?q=kofi&type=users"
-        assert len(data["results"]) == 5
+        assert len(data["results"]) == 10
 
 def test_api_search_url_input():
     with patch("app.services.search_service.fetch_all_discovered_profiles", new_callable=AsyncMock) as mock_fetch:

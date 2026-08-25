@@ -31,13 +31,23 @@ def extract_target_from_input(raw_input: str) -> Tuple[str, bool]:
             if len(path_parts) >= 2 and path_parts[0] == "in":
                 return path_parts[1], True
 
-        if "medium.com" in parsed.netloc:
+        if "medium.com" in parsed.netloc or "tiktok.com" in parsed.netloc:
             if path_parts:
                 return path_parts[0].lstrip("@"), True
 
+        if "snapchat.com" in parsed.netloc:
+            if len(path_parts) >= 2 and path_parts[0] == "add":
+                return path_parts[1], True
+
+        if "facebook.com" in parsed.netloc or "instagram.com" in parsed.netloc or "x.com" in parsed.netloc or "twitter.com" in parsed.netloc:
+            if path_parts:
+                extracted = path_parts[0].lstrip("@")
+                if extracted not in ["search", "explore", "p", "add"]:
+                    return extracted, True
+
         if path_parts:
             extracted = path_parts[0].lstrip("@")
-            if extracted not in ["search", "users", "pub", "dir", "in"]:
+            if extracted not in ["search", "users", "pub", "dir", "in", "explore", "add"]:
                 return extracted, True
 
     except Exception:
