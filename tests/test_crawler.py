@@ -47,6 +47,23 @@ async def test_fetch_gitlab_profile_mocked():
         assert data["platform"] == "GitLab"
         assert data["name"] == "GitLab User"
 
+@pytest.mark.asyncio
+async def test_crawl_profile_info_social_platforms():
+    with patch("app.services.crawler_service.fetch_opengraph_profile", new_callable=AsyncMock) as mock_og:
+        mock_og.return_value = {
+            "platform": "X (Twitter)",
+            "username": "kofi",
+            "name": "Kofi",
+            "bio": "Developer",
+            "location": "Public Profile",
+            "avatar_url": None,
+            "profile_url": "https://x.com/kofi",
+            "metrics": {"Status": "Publicly Accessible"}
+        }
+        res = await crawl_profile_info("x", "kofi")
+        assert res["platform"] == "X (Twitter)"
+        assert res["profile_url"] == "https://x.com/kofi"
+
 def test_api_profile_info_endpoint():
     mock_data = {
         "platform": "GitHub",

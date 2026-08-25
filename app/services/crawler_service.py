@@ -145,5 +145,20 @@ async def crawl_profile_info(platform: str, username: str) -> Dict[str, Any]:
     elif p_lower == "medium":
         url = f"https://medium.com/@{urllib.parse.quote(username.lstrip('@'))}"
         return await fetch_opengraph_profile("Medium", url, username)
+    elif p_lower in ["x", "x (twitter)", "twitter"]:
+        url = f"https://x.com/{urllib.parse.quote(username.lstrip('@'))}"
+        return await fetch_opengraph_profile("X (Twitter)", url, username)
+    elif p_lower == "facebook":
+        url = f"https://www.facebook.com/{urllib.parse.quote(username)}"
+        return await fetch_opengraph_profile("Facebook", url, username)
+    elif p_lower == "instagram":
+        url = f"https://www.instagram.com/{urllib.parse.quote(username.lstrip('@'))}"
+        return await fetch_opengraph_profile("Instagram", url, username)
+    elif p_lower == "tiktok":
+        url = f"https://www.tiktok.com/@{urllib.parse.quote(username.lstrip('@'))}"
+        return await fetch_opengraph_profile("TikTok", url, username)
+    elif p_lower == "snapchat":
+        url = f"https://www.snapchat.com/add/{urllib.parse.quote(username)}"
+        return await fetch_opengraph_profile("Snapchat", url, username)
     else:
         return {"platform": platform, "username": username, "error": "Unsupported platform"}

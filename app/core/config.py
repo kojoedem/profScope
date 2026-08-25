@@ -43,6 +43,41 @@ PLATFORMS: Dict[str, PlatformConfig] = {
         direct_search_url_template="https://medium.com/search?q={query}",
         profile_url_template="https://medium.com/@{username}",
         google_dork_template='site:medium.com "@ {query}"'
+    ),
+    "x": PlatformConfig(
+        name="X (Twitter)",
+        domain="x.com",
+        direct_search_url_template="https://x.com/search?q={query}&f=user",
+        profile_url_template="https://x.com/{username}",
+        google_dork_template='site:x.com "{query}"'
+    ),
+    "facebook": PlatformConfig(
+        name="Facebook",
+        domain="facebook.com",
+        direct_search_url_template="https://www.facebook.com/search/people/?q={query}",
+        profile_url_template="https://www.facebook.com/{username}",
+        google_dork_template='site:facebook.com "{query}"'
+    ),
+    "instagram": PlatformConfig(
+        name="Instagram",
+        domain="instagram.com",
+        direct_search_url_template="https://www.instagram.com/explore/tags/{query}/",
+        profile_url_template="https://www.instagram.com/{username}",
+        google_dork_template='site:instagram.com "{query}"'
+    ),
+    "tiktok": PlatformConfig(
+        name="TikTok",
+        domain="tiktok.com",
+        direct_search_url_template="https://www.tiktok.com/search/user?q={query}",
+        profile_url_template="https://www.tiktok.com/@{username}",
+        google_dork_template='site:tiktok.com "@ {query}"'
+    ),
+    "snapchat": PlatformConfig(
+        name="Snapchat",
+        domain="snapchat.com",
+        direct_search_url_template="https://www.snapchat.com/add/{query}",
+        profile_url_template="https://www.snapchat.com/add/{username}",
+        google_dork_template='site:snapchat.com/add "{query}"'
     )
 }
 
