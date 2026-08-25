@@ -46,6 +46,16 @@ PLATFORMS: Dict[str, PlatformConfig] = {
     )
 }
 
+class DiscoveredUserProfile(BaseModel):
+    platform: str
+    display_name: str
+    username: str
+    avatar_url: Optional[str] = None
+    profile_url: str
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    extra_info: Optional[str] = None
+
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1, description="Target name or username to search")
     platforms: Optional[List[str]] = Field(default=None, description="Optional list of target platforms")
@@ -63,4 +73,5 @@ class SearchResponse(BaseModel):
     raw_query: str
     extracted_target: str
     is_url: bool
+    discovered_profiles: List[DiscoveredUserProfile] = []
     results: List[ProfileResult]
