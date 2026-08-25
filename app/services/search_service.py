@@ -91,12 +91,16 @@ async def search_github_profiles(target: str) -> List[DiscoveredUserProfile]:
                 items = res.json().get("items", [])
                 for item in items:
                     login = item.get("login")
+                    dork = f'site:github.com "{login}"'
                     profiles.append(DiscoveredUserProfile(
                         platform="GitHub",
                         display_name=login,
                         username=login,
                         avatar_url=item.get("avatar_url"),
                         profile_url=item.get("html_url") or f"https://github.com/{login}",
+                        search_url=f"https://github.com/search?q={urllib.parse.quote(login)}&type=users",
+                        google_dork=dork,
+                        google_dork_url=generate_google_dork_url(dork),
                         extra_info=f"Type: {item.get('type', 'User')}"
                     ))
     except Exception:
@@ -115,12 +119,16 @@ async def search_gitlab_profiles(target: str) -> List[DiscoveredUserProfile]:
                     for u in users:
                         username = u.get("username")
                         name = u.get("name") or username
+                        dork = f'site:gitlab.com "{username}"'
                         profiles.append(DiscoveredUserProfile(
                             platform="GitLab",
                             display_name=name,
                             username=username,
                             avatar_url=u.get("avatar_url"),
                             profile_url=u.get("web_url") or f"https://gitlab.com/{username}",
+                            search_url=f"https://gitlab.com/search?search={urllib.parse.quote(username)}",
+                            google_dork=dork,
+                            google_dork_url=generate_google_dork_url(dork),
                             location=u.get("location"),
                             extra_info=f"State: {u.get('state', 'active')}"
                         ))
@@ -139,12 +147,16 @@ async def search_stackoverflow_profiles(target: str) -> List[DiscoveredUserProfi
                 for item in items:
                     display_name = item.get("display_name")
                     rep = item.get("reputation", 0)
+                    dork = f'site:stackoverflow.com/users "{display_name}"'
                     profiles.append(DiscoveredUserProfile(
                         platform="Stack Overflow",
                         display_name=display_name,
                         username=display_name,
                         avatar_url=item.get("profile_image"),
                         profile_url=item.get("link") or f"https://stackoverflow.com/users/{item.get('user_id')}",
+                        search_url=f"https://stackoverflow.com/users?search={urllib.parse.quote(display_name)}",
+                        google_dork=dork,
+                        google_dork_url=generate_google_dork_url(dork),
                         location=item.get("location"),
                         extra_info=f"Reputation: {rep}"
                     ))

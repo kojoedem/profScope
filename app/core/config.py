@@ -52,6 +52,9 @@ class DiscoveredUserProfile(BaseModel):
     username: str
     avatar_url: Optional[str] = None
     profile_url: str
+    search_url: Optional[str] = None
+    google_dork: Optional[str] = None
+    google_dork_url: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
     extra_info: Optional[str] = None
