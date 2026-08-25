@@ -214,10 +214,16 @@
             margin-bottom: 1rem;
         }
 
+        .card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .btn-visit {
             display: block;
             width: 100%;
-            padding: 0.6rem;
+            padding: 0.5rem 0.75rem;
             border-radius: 6px;
             background-color: #064e3b;
             color: #6ee7b7;
@@ -262,12 +268,12 @@
             margin-top: 1rem;
         }
 
-        .card-links button, .card-links a {
+        .card-links button, .card-links a, .card-actions a {
             display: inline-block;
             padding: 0.5rem 0.75rem;
             border-radius: 4px;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-align: center;
         }
 
@@ -434,7 +440,7 @@
         <details class="instructions" open>
             <summary>💡 How to use ProfScope</summary>
             <ul>
-                <li><strong>Enter a Name or Handle:</strong> e.g., <code>"kofi"</code> or <code>"John Doe"</code> &rarr; Instantly displays matching public user profile cards (with photo, handle, platform, and direct links) on this page!</li>
+                <li><strong>Enter a Name or Handle:</strong> e.g., <code>"kofi"</code> or <code>"John Doe"</code> &rarr; Instantly displays matching public user profile cards (with photo, handle, platform, direct profile links, search links, and Google dorks) on this page!</li>
                 <li><strong>Paste a Profile URL:</strong> e.g., <code>"https://stackoverflow.com/users/12888115/kofi"</code> &rarr; Automatically extracts target handle <code>kofi</code> and finds matching profiles across other professional platforms.</li>
             </ul>
         </details>
@@ -483,15 +489,21 @@
                         {% endif %}
                     </div>
                 </div>
-                <div>
-                    <a href="{{ profile.profile_url }}" target="_blank" class="btn-visit">Open {{ profile.platform }} Profile &rarr;</a>
+                <div class="card-actions">
+                    <a href="{{ profile.profile_url }}" target="_blank" class="btn-visit">Open Profile Page &rarr;</a>
+                    {% if profile.search_url %}
+                    <a href="{{ profile.search_url }}" target="_blank" class="btn-search">🌐 Platform Search</a>
+                    {% endif %}
+                    {% if profile.google_dork_url %}
+                    <a href="{{ profile.google_dork_url }}" target="_blank" class="btn-dork" title="{{ profile.google_dork }}">🔍 Google Dork Search</a>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
         {% endif %}
 
-        <h3 class="section-title">🌐 Platform Search & Google Dorks</h3>
+        <h3 class="section-title">🌐 Targeted Platform Search & Google Dorks</h3>
         <div class="results-grid">
             {% for item in search_data.results %}
             <div class="card">

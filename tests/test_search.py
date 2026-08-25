@@ -62,7 +62,10 @@ def test_api_search_endpoint():
             display_name="kofi",
             username="kofi",
             avatar_url="https://github.com/avatar.png",
-            profile_url="https://github.com/kofi"
+            profile_url="https://github.com/kofi",
+            search_url="https://github.com/search?q=kofi&type=users",
+            google_dork='site:github.com "kofi"',
+            google_dork_url="https://www.google.com/search?q=site%3Agithub.com%20%22kofi%22"
         )
     ]
     with patch("app.services.search_service.fetch_all_discovered_profiles", new_callable=AsyncMock) as mock_fetch:
@@ -74,6 +77,7 @@ def test_api_search_endpoint():
         assert data["extracted_target"] == "kofi"
         assert len(data["discovered_profiles"]) == 1
         assert data["discovered_profiles"][0]["display_name"] == "kofi"
+        assert data["discovered_profiles"][0]["search_url"] == "https://github.com/search?q=kofi&type=users"
         assert len(data["results"]) == 5
 
 def test_api_search_url_input():
@@ -115,7 +119,10 @@ def test_web_home_route_with_query():
             display_name="kofi",
             username="kofi",
             avatar_url="https://github.com/avatar.png",
-            profile_url="https://github.com/kofi"
+            profile_url="https://github.com/kofi",
+            search_url="https://github.com/search?q=kofi&type=users",
+            google_dork='site:github.com "kofi"',
+            google_dork_url="https://www.google.com/search?q=site%3Agithub.com%20%22kofi%22"
         )
     ]
     with patch("app.services.search_service.fetch_all_discovered_profiles", new_callable=AsyncMock) as mock_fetch:
@@ -123,4 +130,5 @@ def test_web_home_route_with_query():
         response = client.get("/?q=kofi")
         assert response.status_code == 200
         assert "Matching Public User Profiles" in response.text
-        assert "Open GitHub Profile" in response.text
+        assert "Platform Search" in response.text
+        assert "Google Dork Search" in response.text
