@@ -1,9 +1,30 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.services.search_service import format_platform_urls, generate_google_dork_url
+from app.services.search_service import format_platform_urls, generate_google_dork_url, extract_target_from_input
 
 client = TestClient(app)
+
+def test_extract_target_from_input():
+    # Plain text query
+    target, is_url = extract_target_from_input("octocat")
+    assert target == "octocat"
+    assert is_url is False
+
+    # Full name query
+    target, is_url = extract_target_from_input("John Doe")
+    assert target == "John Doe"
+    assert is_url is False
+
+    # StackOverflow URL
+    target, is_url = extract_target_from_input("https://stackoverflow.com/users/12888115/kofi")
+    assert target == "kofi"
+    assert is_url is True
+
+    # LinkedIn URL
+    target, is_url = extract_target_from_input("https://linkedin.com/in/jane-doe")
+    assert target == "jane-doe"
+    assert is_url is True
 
 def test_google_dork_url_generation():
     url = generate_google_dork_url('site:linkedin.com/in/ "John Doe"')
@@ -40,8 +61,19 @@ def test_api_search_endpoint():
     response = client.get("/api/v1/search?q=testuser")
     assert response.status_code == 200
     data = response.json()
-    assert data["query"] == "testuser"
+    assert data["raw_query"] == "testuser"
+    assert data["extracted_target"] == "testuser"
     assert len(data["results"]) == 5
+
+def test_api_search_url_input():
+    response = client.get("/api/v1/search?q=https://stackoverflow.com/users/12888115/kofi")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["extracted_target"] == "kofi"
+    assert data["is_url"] is True
+    # Ensure candidate URL is generated properly for extracted handle 'kofi'
+    github_res = next(r for r in data["results"] if r["platform"] == "GitHub")
+    assert github_res["profile_candidate_url"] == "https://github.com/kofi"
 
 def test_api_search_with_platform_filter():
     response = client.get("/api/v1/search?q=testuser&platforms=github&platforms=medium")
@@ -65,5 +97,5 @@ def test_web_home_route():
 def test_web_home_route_with_query():
     response = client.get("/?q=Jane+Doe")
     assert response.status_code == 200
-    assert "Results for &quot;Jane Doe&quot;" in response.text or 'Results for "Jane Doe"' in response.text
+    assert "Results for target: &quot;Jane Doe&quot;" in response.text or 'Results for target: "Jane Doe"' in response.text
     assert "LinkedIn" in response.text

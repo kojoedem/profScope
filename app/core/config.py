@@ -60,5 +60,7 @@ class ProfileResult(BaseModel):
     status: str = "generated"  # candidate, generated, exists, etc.
 
 class SearchResponse(BaseModel):
-    query: str
+    raw_query: str
+    extracted_target: str
+    is_url: bool
     results: List[ProfileResult]
