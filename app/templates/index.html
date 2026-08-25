@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProfScope - OSINT Profile Discovery</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #38bdf8;
+            --accent-hover: #0284c7;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .search-box {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #0f172a;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus {
+            outline: None;
+            border-color: var(--accent-color);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--accent-color);
+            color: #0f172a;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+            color: #fff;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card h3 {
+            color: var(--accent-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .card-links a {
+            display: inline-block;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .btn-search {
+            background-color: #334155;
+            color: #f8fafc;
+        }
+
+        .btn-search:hover {
+            background-color: #475569;
+        }
+
+        .btn-dork {
+            background-color: #1e1b4b;
+            color: #a5b4fc;
+            border: 1px solid #4338ca;
+        }
+
+        .btn-dork:hover {
+            background-color: #312e81;
+        }
+
+        .btn-candidate {
+            background-color: #064e3b;
+            color: #6ee7b7;
+            border: 1px solid #047857;
+        }
+
+        .btn-candidate:hover {
+            background-color: #065f46;
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ProfScope</h1>
+            <p>Professional OSINT Profile Discovery Tool</p>
+        </header>
+
+        <div class="search-box">
+            <form action="/" method="get" class="search-form">
+                <input type="text" name="q" value="{{ query if query else '' }}" placeholder="Enter full name or username (e.g. 'John Doe' or 'octocat')" required>
+                <button type="submit">Discover Profiles</button>
+            </form>
+        </div>
+
+        {% if results %}
+        <h2 style="margin-bottom: 1rem; font-size: 1.3rem;">Results for "{{ query }}"</h2>
+        <div class="results-grid">
+            {% for item in results %}
+            <div class="card">
+                <div>
+                    <h3>{{ item.platform }}</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">{{ item.domain }}</p>
+                </div>
+                <div class="card-links">
+                    {% if item.profile_candidate_url %}
+                    <a href="{{ item.profile_candidate_url }}" target="_blank" class="btn-candidate">Direct Handle Link</a>
+                    {% endif %}
+                    <a href="{{ item.search_url }}" target="_blank" class="btn-search">Search Platform</a>
+                    <a href="{{ item.google_dork_url }}" target="_blank" class="btn-dork">Google Dork Search</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <footer>
+            <p>ProfScope - Public OSINT Discovery Tool for Legitimate Research</p>
+        </footer>
+    </div>
+</body>
+</html>
