@@ -1,15 +1,18 @@
 import re
 import urllib.parse
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 import httpx
-from app.core.config import PLATFORMS, ProfileResult, SearchResponse
+from app.core.config import PLATFORMS, ProfileResult, SearchResponse, DiscoveredUserProfile
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ProfScope OSINT Discovery Tool"
+}
 
 def extract_target_from_input(raw_input: str) -> Tuple[str, bool]:
     clean_input = raw_input.strip()
     if not (clean_input.startswith("http://") or clean_input.startswith("https://") or "www." in clean_input or ".com" in clean_input):
         return clean_input, False
 
-    # Try parsing URL
     url_to_parse = clean_input
     if not (url_to_parse.startswith("http://") or url_to_parse.startswith("https://")):
         url_to_parse = "https://" + url_to_parse
@@ -18,34 +21,28 @@ def extract_target_from_input(raw_input: str) -> Tuple[str, bool]:
         parsed = urllib.parse.urlparse(url_to_parse)
         path_parts = [p for p in parsed.path.split("/") if p]
 
-        # StackOverflow: /users/12888115/kofi -> kofi
         if "stackoverflow.com" in parsed.netloc:
             if len(path_parts) >= 3 and path_parts[0] == "users":
                 return path_parts[2], True
             elif len(path_parts) >= 2 and path_parts[0] == "users":
                 return path_parts[1], True
 
-        # LinkedIn: /in/john-doe -> john-doe
         if "linkedin.com" in parsed.netloc:
             if len(path_parts) >= 2 and path_parts[0] == "in":
                 return path_parts[1], True
 
-        # Medium: /@username -> username
         if "medium.com" in parsed.netloc:
             if path_parts:
                 return path_parts[0].lstrip("@"), True
 
-        # GitHub / GitLab / generic path
         if path_parts:
             extracted = path_parts[0].lstrip("@")
-            # Avoid extracting generic paths like 'search', 'users' if standalone
             if extracted not in ["search", "users", "pub", "dir", "in"]:
                 return extracted, True
 
     except Exception:
         pass
 
-    # Fallback if parsing fails or non-matching URL path
     return clean_input, True
 
 def generate_google_dork_url(dork_query: str) -> str:
@@ -57,11 +54,9 @@ def format_platform_urls(platform_key: str, query: str) -> ProfileResult:
     clean_query = query.strip()
     encoded_query = urllib.parse.quote(clean_query)
 
-    # Generate Google Dork
     dork = config.google_dork_template.format(query=clean_query)
     dork_url = generate_google_dork_url(dork)
 
-    # Generate Direct Platform Search URL
     parts = clean_query.split()
     first_name = urllib.parse.quote(parts[0]) if parts else ""
     last_name = urllib.parse.quote(" ".join(parts[1:])) if len(parts) > 1 else ""
@@ -72,7 +67,6 @@ def format_platform_urls(platform_key: str, query: str) -> ProfileResult:
         last_name=last_name
     )
 
-    # Candidate profile URL if single token (potential username/handle) and not a full URL
     candidate_url = None
     if " " not in clean_query and not clean_query.startswith("http://") and not clean_query.startswith("https://") and config.profile_url_template:
         candidate_url = config.profile_url_template.format(username=urllib.parse.quote(clean_query.lstrip("@")))
@@ -87,13 +81,93 @@ def format_platform_urls(platform_key: str, query: str) -> ProfileResult:
         status="generated"
     )
 
+async def search_github_profiles(target: str) -> List[DiscoveredUserProfile]:
+    profiles = []
+    try:
+        url = f"https://api.github.com/search/users?q={urllib.parse.quote(target)}&per_page=10"
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            res = await client.get(url, headers=HEADERS)
+            if res.status_code == 200:
+                items = res.json().get("items", [])
+                for item in items:
+                    login = item.get("login")
+                    profiles.append(DiscoveredUserProfile(
+                        platform="GitHub",
+                        display_name=login,
+                        username=login,
+                        avatar_url=item.get("avatar_url"),
+                        profile_url=item.get("html_url") or f"https://github.com/{login}",
+                        extra_info=f"Type: {item.get('type', 'User')}"
+                    ))
+    except Exception:
+        pass
+    return profiles
+
+async def search_gitlab_profiles(target: str) -> List[DiscoveredUserProfile]:
+    profiles = []
+    try:
+        url = f"https://gitlab.com/api/v4/users?search={urllib.parse.quote(target)}&per_page=10"
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            res = await client.get(url, headers=HEADERS)
+            if res.status_code == 200:
+                users = res.json()
+                if isinstance(users, list):
+                    for u in users:
+                        username = u.get("username")
+                        name = u.get("name") or username
+                        profiles.append(DiscoveredUserProfile(
+                            platform="GitLab",
+                            display_name=name,
+                            username=username,
+                            avatar_url=u.get("avatar_url"),
+                            profile_url=u.get("web_url") or f"https://gitlab.com/{username}",
+                            location=u.get("location"),
+                            extra_info=f"State: {u.get('state', 'active')}"
+                        ))
+    except Exception:
+        pass
+    return profiles
+
+async def search_stackoverflow_profiles(target: str) -> List[DiscoveredUserProfile]:
+    profiles = []
+    try:
+        url = f"https://api.stackexchange.com/2.3/users?inname={urllib.parse.quote(target)}&site=stackoverflow&pagesize=10"
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            res = await client.get(url, headers=HEADERS)
+            if res.status_code == 200:
+                items = res.json().get("items", [])
+                for item in items:
+                    display_name = item.get("display_name")
+                    rep = item.get("reputation", 0)
+                    profiles.append(DiscoveredUserProfile(
+                        platform="Stack Overflow",
+                        display_name=display_name,
+                        username=display_name,
+                        avatar_url=item.get("profile_image"),
+                        profile_url=item.get("link") or f"https://stackoverflow.com/users/{item.get('user_id')}",
+                        location=item.get("location"),
+                        extra_info=f"Reputation: {rep}"
+                    ))
+    except Exception:
+        pass
+    return profiles
+
+async def fetch_all_discovered_profiles(target: str) -> List[DiscoveredUserProfile]:
+    profiles: List[DiscoveredUserProfile] = []
+    gh = await search_github_profiles(target)
+    gl = await search_gitlab_profiles(target)
+    so = await search_stackoverflow_profiles(target)
+    profiles.extend(gh)
+    profiles.extend(gl)
+    profiles.extend(so)
+    return profiles
+
 async def check_candidate_url(candidate_url: Optional[str]) -> Optional[str]:
     if not candidate_url:
         return None
     try:
         async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ProfScope OSINT Tool"}
-            response = await client.head(candidate_url, headers=headers)
+            response = await client.head(candidate_url, headers=HEADERS)
             if response.status_code == 200:
                 return "exists"
             elif response.status_code == 404:
@@ -118,9 +192,12 @@ async def perform_search(query: str, platforms: Optional[List[str]] = None, chec
                     res.status = status
             results.append(res)
 
+    discovered_profiles = await fetch_all_discovered_profiles(target)
+
     return SearchResponse(
         raw_query=query,
         extracted_target=target,
         is_url=is_url,
+        discovered_profiles=discovered_profiles,
         results=results
     )

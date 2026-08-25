@@ -30,7 +30,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -136,6 +136,102 @@
             font-size: 0.9rem;
             color: var(--text-muted);
             margin-top: 0.25rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--accent-color);
+            margin: 2rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .profiles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .user-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .user-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-color);
+        }
+
+        .user-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-color);
+            background-color: #334155;
+        }
+
+        .user-info h4 {
+            font-size: 1rem;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .user-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .platform-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            background-color: #0f172a;
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .user-meta {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+
+        .btn-visit {
+            display: block;
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 6px;
+            background-color: #064e3b;
+            color: #6ee7b7;
+            border: 1px solid #047857;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn-visit:hover {
+            background-color: #065f46;
+            color: #fff;
         }
 
         .results-grid {
@@ -338,15 +434,14 @@
         <details class="instructions" open>
             <summary>💡 How to use ProfScope</summary>
             <ul>
-                <li><strong>Enter a Full Name:</strong> e.g., <code>"John Doe"</code> &rarr; Discovers candidate profiles across LinkedIn, GitHub, GitLab, Stack Overflow, and Medium.</li>
-                <li><strong>Enter a Username / Handle:</strong> e.g., <code>"octocat"</code> or <code>"kofi"</code> &rarr; Generates direct candidate profile links, inline profile previews, and targeted dorks.</li>
-                <li><strong>Paste a Profile URL:</strong> e.g., <code>"https://stackoverflow.com/users/12888115/kofi"</code> &rarr; Automatically extracts handle <code>kofi</code> and finds matching profiles across other professional platforms.</li>
+                <li><strong>Enter a Name or Handle:</strong> e.g., <code>"kofi"</code> or <code>"John Doe"</code> &rarr; Instantly displays matching public user profile cards (with photo, handle, platform, and direct links) on this page!</li>
+                <li><strong>Paste a Profile URL:</strong> e.g., <code>"https://stackoverflow.com/users/12888115/kofi"</code> &rarr; Automatically extracts target handle <code>kofi</code> and finds matching profiles across other professional platforms.</li>
             </ul>
         </details>
 
         <div class="search-box">
             <form action="/" method="get" class="search-form">
-                <input type="text" name="q" value="{{ search_data.raw_query if search_data else '' }}" placeholder="Enter full name, handle, or profile URL (e.g. 'Jane Doe', 'octocat', or StackOverflow link)" required>
+                <input type="text" name="q" value="{{ search_data.raw_query if search_data else '' }}" placeholder="Enter full name, handle, or profile URL (e.g. 'kofi', 'Jane Doe', or StackOverflow link)" required>
                 <button type="submit">Discover Profiles</button>
             </form>
         </div>
@@ -357,10 +452,46 @@
             {% if search_data.is_url %}
             <p>ℹ️ Extracted handle/target <code>{{ search_data.extracted_target }}</code> from submitted URL: <i>{{ search_data.raw_query }}</i></p>
             {% else %}
-            <p>Searching professional platforms and generating Google Dorks for <code>{{ search_data.extracted_target }}</code></p>
+            <p>Searching professional platforms and generating user profiles for <code>{{ search_data.extracted_target }}</code></p>
             {% endif %}
         </div>
 
+        {% if search_data.discovered_profiles %}
+        <h3 class="section-title">🔍 Matching Public User Profiles</h3>
+        <div class="profiles-grid">
+            {% for profile in search_data.discovered_profiles %}
+            <div class="user-card">
+                <div>
+                    <span class="platform-badge">{{ profile.platform }}</span>
+                    <div class="user-card-header">
+                        {% if profile.avatar_url %}
+                        <img src="{{ profile.avatar_url }}" alt="Avatar" class="user-avatar">
+                        {% else %}
+                        <div class="user-avatar" style="display:flex;align-items:center;justify-content:center;font-weight:bold;color:#38bdf8;">OSINT</div>
+                        {% endif %}
+                        <div class="user-info">
+                            <h4>{{ profile.display_name }}</h4>
+                            <p>@{{ profile.username }}</p>
+                        </div>
+                    </div>
+                    <div class="user-meta">
+                        {% if profile.location %}
+                        <p>📍 {{ profile.location }}</p>
+                        {% endif %}
+                        {% if profile.extra_info %}
+                        <p>📊 {{ profile.extra_info }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ profile.profile_url }}" target="_blank" class="btn-visit">Open {{ profile.platform }} Profile &rarr;</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <h3 class="section-title">🌐 Platform Search & Google Dorks</h3>
         <div class="results-grid">
             {% for item in search_data.results %}
             <div class="card">
